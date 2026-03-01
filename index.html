@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OutreachFinder</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080810;
+  --s1: #0f0f1a;
+  --s2: #141420;
+  --border: #1c1c2e;
+  --border2: #252538;
+  --green: #39ff8f;
+  --red: #ff3f6b;
+  --blue: #4d9eff;
+  --yellow: #ffd166;
+  --purple: #9b6dff;
+  --text: #ddddef;
+  --muted: #5a5a78;
+  --muted2: #3a3a55;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Syne', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--display);min-height:100vh;overflow-x:hidden;}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:100;}
+.lbox{width:100%;max-width:360px;background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:38px 32px;position:relative;overflow:hidden;}
+.lbox::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--blue),var(--purple));}
+.l-logo{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:4px;text-transform:uppercase;margin-bottom:22px;}
+.lbox h2{font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:6px;}
+.lbox .sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:26px;letter-spacing:1px;}
+.lf label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.lf input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:12px 14px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;transition:border-color .2s;letter-spacing:3px;margin-bottom:14px;}
+.lf input:focus{border-color:var(--green);}
+.btn-login{width:100%;background:var(--green);color:var(--bg);border:none;border-radius:9px;padding:13px;font-family:var(--display);font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-login:hover{background:#2fe07a;}
+.l-err{background:rgba(255,63,107,.08);border:1px solid rgba(255,63,107,.2);border-radius:8px;padding:9px 13px;font-family:var(--mono);font-size:11px;color:var(--red);margin-bottom:14px;display:none;}
+.l-hint{font-family:var(--mono);font-size:10px;color:var(--muted2);text-align:center;margin-top:14px;letter-spacing:1px;}
+
+/* APP */
+#app{display:none;}
+.topbar{border-bottom:1px solid var(--border);padding:14px 0;position:sticky;top:0;background:rgba(8,8,16,.94);backdrop-filter:blur(14px);z-index:50;}
+.tbi{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
+.app-logo{font-family:var(--mono);font-size:12px;color:var(--green);letter-spacing:3px;flex-shrink:0;}
+.tab-nav{display:flex;gap:4px;margin-left:auto;}
+.tab-btn{background:transparent;border:1px solid transparent;border-radius:8px;padding:7px 14px;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all .2s;}
+.tab-btn.active{background:var(--s2);border-color:var(--border2);color:var(--text);}
+.btn-lock{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:7px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;transition:all .2s;}
+.btn-lock:hover{border-color:var(--red);color:var(--red);}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px;}
+.tab-panel{display:none;padding:26px 0;}
+.tab-panel.active{display:block;}
+
+/* SEARCH */
+.scard{background:var(--s1);border:1px solid var(--border2);border-radius:16px;padding:22px;margin-bottom:24px;position:relative;overflow:hidden;}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);}
+.srow{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;}
+@media(max-width:560px){.srow{grid-template-columns:1fr;}}
+.sf label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.sf input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 13px;color:var(--text);font-family:var(--display);font-size:14px;outline:none;transition:border-color .2s;}
+.sf input:focus{border-color:var(--green);}
+.btn-go{background:var(--green);color:var(--bg);border:none;border-radius:8px;padding:10px 20px;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-go:hover{background:#2fe07a;}
+.btn-go:disabled{opacity:.4;cursor:not-allowed;}
+
+/* PLATFORM TOGGLES */
+.prow{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;}
+.ptog{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:11px;font-family:var(--mono);transition:all .2s;user-select:none;color:var(--muted);}
+.ptog.on{border-color:var(--green);color:var(--green);background:rgba(57,255,143,.05);}
+.ptog .dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* PROGRESS */
+.progress-wrap{margin-top:14px;display:none;}
+.progress-bar-bg{background:var(--border);border-radius:4px;height:3px;overflow:hidden;}
+.progress-bar{background:linear-gradient(90deg,var(--green),var(--blue));height:3px;width:0%;transition:width .4s ease;border-radius:4px;}
+.progress-txt{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:1px;}
+
+/* FILTERS */
+.fbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.fchip{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;transition:all .2s;}
+.fchip.active{border-color:var(--blue);color:var(--blue);background:rgba(77,158,255,.06);}
+.fsel{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:5px 11px;font-family:var(--mono);font-size:11px;color:var(--muted);outline:none;cursor:pointer;}
+.fsel option{background:var(--s1);}
+.rmeta{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.rstat{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.rstat strong{color:var(--green);font-size:18px;display:block;}
+.abtns{display:flex;gap:7px;margin-left:auto;}
+.bsm{background:transparent;border:1px solid var(--border2);border-radius:7px;padding:6px 12px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.bsm:hover{border-color:var(--blue);color:var(--blue);}
+.bsm.g:hover{border-color:var(--green);color:var(--green);}
+
+/* CARDS */
+.rlist{display:grid;gap:9px;}
+.rcard{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:15px 16px;display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:start;animation:fu .3s ease forwards;opacity:0;}
+@keyframes fu{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.rcard:hover{border-color:var(--border2);}
+.rcard.sv{border-color:rgba(57,255,143,.18);}
+.pbadge{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);flex-shrink:0;margin-top:2px;}
+.pb-li{background:rgba(0,119,181,.12);color:#4d9eff;}
+.pb-tw{background:rgba(29,161,242,.1);color:#1da1f2;}
+.pb-gh{background:rgba(200,200,200,.07);color:#ccc;}
+.pb-js{background:rgba(57,255,143,.08);color:var(--green);}
+.ri h3{font-size:14px;font-weight:600;margin-bottom:2px;}
+.ri .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.5;}
+.ri .url{font-family:var(--mono);font-size:10px;color:var(--purple);text-decoration:none;display:block;margin-bottom:6px;word-break:break-all;}
+.ri .url:hover{text-decoration:underline;}
+.ri .bio{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:6px;font-style:italic;}
+.nrow{display:flex;gap:5px;align-items:center;margin-top:5px;}
+.ni{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .2s;}
+.ni:focus{border-color:var(--purple);}
+.rr{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:100px;}
+.spill{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600;}
+.sc-hi{background:rgba(57,255,143,.1);color:var(--green);border:1px solid rgba(57,255,143,.2);}
+.sc-md{background:rgba(255,209,102,.1);color:var(--yellow);border:1px solid rgba(255,209,102,.2);}
+.sc-lo{background:rgba(255,63,107,.1);color:var(--red);border:1px solid rgba(255,63,107,.2);}
+.src-tag{font-family:var(--mono);font-size:9px;color:var(--muted2);padding:2px 6px;border:1px solid var(--border);border-radius:4px;}
+.opill{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;cursor:pointer;border:1px solid transparent;}
+.op-p{color:var(--muted);border-color:var(--border);}
+.op-s{color:var(--blue);background:rgba(77,158,255,.08);border-color:rgba(77,158,255,.2);}
+.op-r{color:var(--green);background:rgba(57,255,143,.08);border-color:rgba(57,255,143,.2);}
+.op-n{color:var(--red);background:rgba(255,63,107,.08);border-color:rgba(255,63,107,.2);}
+.cycle-hint{font-family:var(--mono);font-size:9px;color:var(--muted2);text-align:right;}
+.cbtns{display:flex;flex-direction:column;gap:4px;align-items:flex-end;}
+.cb{background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--muted);font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .2s;letter-spacing:1px;white-space:nowrap;}
+.cb:hover{border-color:var(--blue);color:var(--blue);}
+.cb.sv-on{border-color:rgba(57,255,143,.3);color:var(--green);}
+.cb.rm{color:var(--red);border-color:rgba(255,63,107,.25);}
+
+/* SOURCE SECTION LABELS */
+.src-section{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding:10px 0 8px;display:flex;align-items:center;gap:10px;}
+.src-section::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* SAVED */
+.sh{display:flex;align-items:center;gap:11px;margin-bottom:20px;flex-wrap:wrap;}
+.sh h2{font-size:22px;font-weight:800;letter-spacing:-1px;}
+.scnt{background:rgba(57,255,143,.1);color:var(--green);border-radius:20px;padding:3px 12px;font-family:var(--mono);font-size:12px;}
+.sfbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;}
+.empty-sv{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-sv .ic{font-size:36px;margin-bottom:12px;opacity:.25;}
+.empty-sv p{font-family:var(--mono);font-size:12px;letter-spacing:1px;line-height:1.8;}
+
+/* ERROR BANNER */
+.err-banner{background:rgba(255,63,107,.08);border:1px solid rgba(255,63,107,.2);border-radius:10px;padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--red);margin-bottom:16px;display:none;line-height:1.6;}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:16px;padding:24px;max-width:450px;width:100%;position:relative;animation:mi .2s ease;}
+@keyframes mi{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue),transparent);}
+.modal h3{font-size:18px;font-weight:800;margin-bottom:3px;}
+.modal .sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:16px;}
+.modal textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:12px;color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.8;resize:vertical;min-height:140px;outline:none;}
+.modal textarea:focus{border-color:var(--blue);}
+.mbtns{display:flex;gap:9px;margin-top:12px;}
+.btn-cp{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 16px;flex:1;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;}
+.btn-cp:hover{background:#3a8ef0;}
+.btn-cls{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:10px 16px;color:var(--muted);font-family:var(--display);font-size:13px;cursor:pointer;}
+.btn-cls:hover{border-color:var(--red);color:var(--red);}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s2);border:1px solid var(--green);border-radius:10px;padding:10px 16px;font-family:var(--mono);font-size:12px;color:var(--green);z-index:9999;transform:translateY(16px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* LOADING */
+.ldg{text-align:center;padding:50px 20px;display:none;}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ldg p{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="lbox">
+    <div class="l-logo">// OutreachFinder</div>
+    <h2>Welcome back.</h2>
+    <p class="sub">Enter password to unlock →</p>
+    <div class="l-err" id="lErr">Wrong password.</div>
+    <div class="lf">
+      <label>Password</label>
+      <input type="password" id="pwIn" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button class="btn-login" onclick="login()">Unlock →</button>
+    <p class="l-hint">default: outreach2026</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tbi">
+      <div class="app-logo">// OutreachFinder</div>
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('search',this)">Search</button>
+        <button class="tab-btn" onclick="switchTab('saved',this)">Saved <span id="sBadge"></span></button>
+      </div>
+      <button class="btn-lock" onclick="logout()">Lock</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- SEARCH TAB -->
+    <div class="tab-panel active" id="tab-search">
+      <div class="scard">
+        <div class="srow">
+          <div class="sf">
+            <label>Job Title / Keywords</label>
+            <input id="jt" value="Product Manager" placeholder="Product Manager">
+          </div>
+          <div class="sf">
+            <label>Industry / Location</label>
+            <input id="loc" value="SaaS" placeholder="SaaS, London, etc">
+          </div>
+          <button class="btn-go" id="goBtn" onclick="doSearch()">Search →</button>
+        </div>
+        <div class="prow">
+          <div class="ptog on" data-p="jsearch" onclick="toggleP(this)"><span class="dot"></span>LinkedIn/Jobs</div>
+          <div class="ptog on" data-p="twitter" onclick="toggleP(this)"><span class="dot"></span>Twitter/X</div>
+          <div class="ptog on" data-p="github" onclick="toggleP(this)"><span class="dot"></span>GitHub</div>
+        </div>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+          <div class="progress-txt" id="progressTxt">Starting...</div>
+        </div>
+      </div>
+
+      <div class="err-banner" id="errBanner"></div>
+
+      <div id="sRes" style="display:none">
+        <div class="fbar">
+          <div class="fchip active" data-f="all" onclick="filterR('all',this)">All</div>
+          <div class="fchip" data-f="jsearch" onclick="filterR('jsearch',this)">LinkedIn/Jobs</div>
+          <div class="fchip" data-f="twitter" onclick="filterR('twitter',this)">Twitter</div>
+          <div class="fchip" data-f="github" onclick="filterR('github',this)">GitHub</div>
+          <select class="fsel" id="sortSel" onchange="renderR()">
+            <option value="sd">Score ↓</option>
+            <option value="sa">Score ↑</option>
+            <option value="az">Name A-Z</option>
+          </select>
+        </div>
+        <div class="rmeta">
+          <div class="rstat"><strong id="tC">0</strong>found</div>
+          <div class="rstat"><strong id="svC">0</strong>saved</div>
+          <div class="abtns">
+            <button class="bsm g" onclick="exportCSV(false)">↓ CSV</button>
+          </div>
+        </div>
+        <div class="rlist" id="rList"></div>
+      </div>
+
+      <div id="emptyS" style="text-align:center;padding:60px 20px;color:var(--muted);">
+        <div style="font-size:36px;margin-bottom:12px;opacity:.2;">⌖</div>
+        <p style="font-family:var(--mono);font-size:12px;letter-spacing:2px;">search to find real people</p>
+      </div>
+    </div>
+
+    <!-- SAVED TAB -->
+    <div class="tab-panel" id="tab-saved">
+      <div class="sh">
+        <h2>Saved Contacts</h2>
+        <span class="scnt" id="scntBadge">0 contacts</span>
+      </div>
+      <div class="sfbar">
+        <div class="fchip active" data-sf="all" onclick="filterSv('all',this)">All</div>
+        <div class="fchip" data-sf="pending" onclick="filterSv('pending',this)">Not Contacted</div>
+        <div class="fchip" data-sf="sent" onclick="filterSv('sent',this)">DM Sent</div>
+        <div class="fchip" data-sf="replied" onclick="filterSv('replied',this)">Replied ✓</div>
+        <div class="fchip" data-sf="noreply" onclick="filterSv('noreply',this)">No Reply</div>
+        <button class="bsm g" style="margin-left:auto" onclick="exportCSV(true)">↓ Export CSV</button>
+      </div>
+      <div class="rlist" id="svList"></div>
+      <div class="empty-sv" id="emptySv">
+        <div class="ic">📋</div>
+        <p>No saved contacts yet.<br>Search and save contacts to track them here.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DM Modal -->
+<div class="overlay" id="dmOv">
+  <div class="modal">
+    <h3>DM Template</h3>
+    <p class="sub" id="dmFor">—</p>
+    <textarea id="dmTxt"></textarea>
+    <div class="mbtns">
+      <button class="btn-cp" onclick="copyDM()">Copy & Mark Sent</button>
+      <button class="btn-cls" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──
+const RAPIDAPI_KEY = '7009d3a658msh0928682732d2f16p10d20ajsne09d6578fc24';
+const STORE = 'of_v4', PW_STORE = 'of_pw2', SESS = 'of_sess2';
+const DEFAULT_PW = 'outreach2026';
+
+let results = [], saved = {}, activeF = 'all', activePlat = new Set(['jsearch','twitter','github']), dmId = null;
+
+const SCYCLE = ['pending','sent','replied','noreply'];
+const SCLS   = {pending:'op-p',sent:'op-s',replied:'op-r',noreply:'op-n'};
+const SLBL   = {pending:'◦ Not Sent',sent:'📤 Sent',replied:'✓ Replied',noreply:'✗ No Reply'};
+
+// ── AUTH ──
+function login(){
+  const pw = document.getElementById('pwIn').value;
+  const stored = localStorage.getItem(PW_STORE) || DEFAULT_PW;
+  if(pw === stored){
+    sessionStorage.setItem(SESS,'1');
+    document.getElementById('lErr').style.display='none';
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadSaved(); updateBadge();
+  } else {
+    document.getElementById('lErr').style.display='block';
+    document.getElementById('pwIn').value='';
+    document.getElementById('pwIn').focus();
+  }
+}
+function logout(){
+  sessionStorage.removeItem(SESS);
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('pwIn').value='';
+}
+window.onload=()=>{
+  if(sessionStorage.getItem(SESS)){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadSaved(); updateBadge();
+  }
+};
+
+// ── SAVED ──
+function loadSaved(){try{saved=JSON.parse(localStorage.getItem(STORE)||'{}');}catch{saved={};}}
+function persist(){localStorage.setItem(STORE,JSON.stringify(saved));}
+function saveC(contact){
+  if(!saved[contact.id]){
+    saved[contact.id]={...contact,savedAt:Date.now(),outreachStatus:'pending',note:contact.note||''};
+    persist(); updateBadge(); renderSvTab();
+    showToast('Contact saved ✓');
+  }
+}
+function unsaveC(id){delete saved[id];persist();updateBadge();renderSvTab();updateStats();}
+function updateBadge(){
+  const n=Object.keys(saved).length;
+  document.getElementById('sBadge').textContent=n?`(${n})`:'';
+  document.getElementById('scntBadge').textContent=`${n} contact${n!==1?'s':''}`;
+}
+
+// ── TABS ──
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='saved') renderSvTab();
+}
+
+// ── PLATFORM TOGGLE ──
+function toggleP(el){
+  const p=el.dataset.p;
+  if(activePlat.has(p)){if(activePlat.size===1)return;activePlat.delete(p);el.classList.remove('on');}
+  else{activePlat.add(p);el.classList.add('on');}
+}
+
+// ── PROGRESS ──
+function setProgress(pct, txt){
+  document.getElementById('progressBar').style.width = pct+'%';
+  document.getElementById('progressTxt').textContent = txt;
+}
+
+// ── MAIN SEARCH ──
+async function doSearch(){
+  const query = document.getElementById('jt').value.trim() || 'Product Manager';
+  const loc   = document.getElementById('loc').value.trim() || 'SaaS';
+
+  document.getElementById('emptyS').style.display='none';
+  document.getElementById('sRes').style.display='none';
+  document.getElementById('errBanner').style.display='none';
+  document.getElementById('progressWrap').style.display='block';
+  document.getElementById('goBtn').disabled=true;
+
+  results = [];
+  const errors = [];
+
+  setProgress(5, 'STARTING SEARCH...');
+
+  // Run selected sources in parallel
+  const promises = [];
+  if(activePlat.has('jsearch'))  promises.push(fetchJSearch(query, loc).catch(e=>{errors.push('LinkedIn/Jobs: '+e.message);return[];}));
+  if(activePlat.has('twitter'))  promises.push(fetchTwitter(query).catch(e=>{errors.push('Twitter: '+e.message);return[];}));
+  if(activePlat.has('github'))   promises.push(fetchGitHub(query).catch(e=>{errors.push('GitHub: '+e.message);return[];}));
+
+  let done = 0;
+  const total = promises.length;
+  const resolved = await Promise.allSettled(promises.map(p => p.then(r => {
+    done++;
+    setProgress(10 + (done/total)*80, `LOADED ${done}/${total} SOURCES...`);
+    return r;
+  })));
+
+  resolved.forEach(r => { if(r.status==='fulfilled' && Array.isArray(r.value)) results.push(...r.value); });
+
+  setProgress(100, 'DONE');
+  await sl(400);
+
+  document.getElementById('progressWrap').style.display='none';
+  document.getElementById('goBtn').disabled=false;
+
+  if(errors.length){
+    const b=document.getElementById('errBanner');
+    b.innerHTML='⚠️ Some sources failed:<br>'+errors.join('<br>');
+    b.style.display='block';
+  }
+
+  if(results.length){
+    document.getElementById('sRes').style.display='block';
+    activeF='all';
+    document.querySelectorAll('.fchip[data-f]').forEach(c=>c.classList.toggle('active',c.dataset.f==='all'));
+    renderR();
+  } else {
+    document.getElementById('emptyS').style.display='block';
+    document.getElementById('emptyS').querySelector('p').textContent='No results found. Try different keywords.';
+  }
+
+  updateStats();
+}
+
+function sl(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── JSEARCH API (LinkedIn/job boards) ──
+async function fetchJSearch(query, loc){
+  const q = encodeURIComponent(`${query} ${loc}`);
+  const url = `https://jsearch.p.rapidapi.com/search?query=${q}&page=1&num_pages=2&date_posted=all`;
+  const res = await fetch(url, {
+    headers: {
+      'x-rapidapi-host': 'jsearch.p.rapidapi.com',
+      'x-rapidapi-key': RAPIDAPI_KEY
+    }
+  });
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const jobs = data.data || [];
+
+  // Extract unique people from job postings
+  const seen = new Set();
+  return jobs
+    .filter(j => j.employer_name && j.job_apply_link)
+    .map(j => {
+      const raw = (j.employer_name + j.job_title).replace(/[^\x00-\xFF]/g,'').slice(0,40);
+      const id = 'js_' + btoa(unescape(encodeURIComponent(raw))).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+      if(seen.has(id)) return null; seen.add(id);
+
+      const score = scoreJSearch(j);
+      return {
+        id,
+        name: j.employer_name,
+        title: j.job_title || query,
+        company: j.employer_name,
+        platform: 'jsearch',
+        url: j.job_apply_link || j.job_google_link || '#',
+        linkedinUrl: j.employer_linkedin || null,
+        bio: j.job_description ? j.job_description.slice(0,120)+'...' : '',
+        score,
+        outreachStatus: 'pending',
+        note: '',
+        verified: true,
+        status: 'active'
+      };
+    }).filter(Boolean);
+}
+
+function scoreJSearch(j){
+  let s = 5;
+  if(j.employer_linkedin) s += 2;
+  if(j.job_description && j.job_description.length > 200) s += 1;
+  if(j.employer_logo) s += 1;
+  if(j.job_is_remote) s += 1;
+  return Math.min(s, 10);
+}
+
+// ── TWITTER API ──
+async function fetchTwitter(query){
+  const q = encodeURIComponent(`${query} product manager`);
+  const url = `https://twitter241.p.rapidapi.com/search-v2?type=People&count=15&query=${q}`;
+  const res = await fetch(url, {
+    headers: {
+      'x-rapidapi-host': 'twitter241.p.rapidapi.com',
+      'x-rapidapi-key': RAPIDAPI_KEY
+    }
+  });
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+
+  // Navigate Twitter response structure
+  const users = extractTwitterUsers(data);
+  return users.slice(0,15).map(u => ({
+    id: 'tw_' + (u.rest_id || u.id_str || Math.random().toString(36).slice(2)),
+    name: u.legacy?.name || u.name || 'Unknown',
+    title: u.legacy?.description?.slice(0,60) || 'Twitter User',
+    company: extractCompany(u.legacy?.description || ''),
+    platform: 'twitter',
+    url: `https://twitter.com/${u.legacy?.screen_name || u.screen_name || ''}`,
+    bio: u.legacy?.description || '',
+    followers: u.legacy?.followers_count || 0,
+    score: scoreTwitter(u),
+    outreachStatus: 'pending',
+    note: '',
+    verified: u.legacy?.verified || false,
+    status: 'active'
+  }));
+}
+
+function extractTwitterUsers(data){
+  try {
+    // Try multiple paths Twitter API might return users
+    if(data?.result?.timeline?.instructions) {
+      const entries = data.result.timeline.instructions.flatMap(i => i.entries || []);
+      return entries
+        .map(e => e?.content?.itemContent?.user_results?.result)
+        .filter(Boolean);
+    }
+    if(data?.users) return data.users;
+    if(Array.isArray(data)) return data;
+    // Deep search for user objects
+    const str = JSON.stringify(data);
+    const matches = str.match(/"screen_name":"[^"]+"/g);
+    if(matches) {
+      // fallback: parse what we can
+      return [];
+    }
+    return [];
+  } catch(e){ return []; }
+}
+
+function scoreTwitter(u){
+  let s = 4;
+  const followers = u.legacy?.followers_count || 0;
+  if(followers > 1000) s++;
+  if(followers > 5000) s++;
+  if(u.legacy?.verified) s += 2;
+  if(u.legacy?.description?.length > 50) s++;
+  if(u.legacy?.url) s++;
+  return Math.min(s, 10);
+}
+
+function extractCompany(bio){
+  const match = bio.match(/[@]?([A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+)?)/);
+  return match ? match[1] : '';
+}
+
+// ── GITHUB API (free, no key needed) ──
+async function fetchGitHub(query){
+  const q = encodeURIComponent(`${query} in:bio`);
+  const url = `https://api.github.com/search/users?q=${q}&per_page=20&sort=followers`;
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const users = data.items || [];
+
+  // Fetch basic details for top 8 users
+  const detailed = await Promise.all(
+    users.slice(0,8).map(u =>
+      fetch(`https://api.github.com/users/${u.login}`)
+        .then(r=>r.json())
+        .catch(()=>u)
+    )
+  );
+
+  return detailed.map(u => ({
+    id: 'gh_' + (u.login || Math.random().toString(36).slice(2)),
+    name: u.name || u.login || 'GitHub User',
+    title: u.bio?.slice(0,60) || 'GitHub Developer',
+    company: u.company?.replace('@','') || '',
+    platform: 'github',
+    url: u.html_url || `https://github.com/${u.login}`,
+    bio: u.bio || '',
+    followers: u.followers || 0,
+    score: scoreGitHub(u),
+    outreachStatus: 'pending',
+    note: '',
+    verified: true,
+    status: 'active'
+  }));
+}
+
+function scoreGitHub(u){
+  let s = 5;
+  if(u.followers > 100) s++;
+  if(u.followers > 500) s++;
+  if(u.bio && u.bio.length > 30) s++;
+  if(u.company) s++;
+  if(u.blog) s++;
+  return Math.min(s, 10);
+}
+
+// ── RENDER ──
+const PC = {
+  jsearch: { label:'LinkedIn/Jobs', s:'JB', b:'pb-js' },
+  twitter: { label:'Twitter/X',     s:'𝕏',  b:'pb-tw' },
+  github:  { label:'GitHub',        s:'GH', b:'pb-gh' },
+};
+
+function getFiltered(){
+  let list = activeF==='all' ? [...results] : results.filter(x=>x.platform===activeF);
+  const s = document.getElementById('sortSel').value;
+  if(s==='sd') list.sort((a,b)=>b.score-a.score);
+  else if(s==='sa') list.sort((a,b)=>a.score-b.score);
+  else list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  return list;
+}
+
+function renderR(){
+  const container = document.getElementById('rList');
+  container.innerHTML='';
+  const list = getFiltered();
+  if(!list.length){
+    container.innerHTML='<div style="text-align:center;padding:30px;font-family:var(--mono);font-size:12px;color:var(--muted);">No results for this filter.</div>';
+    return;
+  }
+  list.forEach((r,i) => container.appendChild(mkCard(r,i,false)));
+  updateStats();
+}
+
+function renderSvTab(filter){
+  filter = filter || 'all';
+  const list=document.getElementById('svList'), empty=document.getElementById('emptySv');
+  list.innerHTML='';
+  let contacts = Object.values(saved);
+  if(filter!=='all') contacts=contacts.filter(c=>(c.outreachStatus||'pending')===filter);
+  if(!contacts.length){empty.style.display='block';return;}
+  empty.style.display='none';
+  contacts.sort((a,b)=>b.savedAt-a.savedAt);
+  contacts.forEach((c,i)=>list.appendChild(mkCard(c,i,true)));
+  updateBadge();
+}
+
+function mkCard(contact, i, isSvTab){
+  const id=contact.id, pp=PC[contact.platform]||{label:contact.platform,s:'?',b:'pb-js'};
+  const sc=contact.score>=7?'sc-hi':contact.score>=5?'sc-md':'sc-lo';
+  const os=contact.outreachStatus||'pending';
+  const isSv=!!saved[id];
+  const safeId=id.replace(/[^a-zA-Z0-9]/g,'_');
+  const followers = contact.followers ? `· ${contact.followers.toLocaleString()} followers` : '';
+
+  const div=document.createElement('div');
+  div.className='rcard'+(isSv?' sv':'');
+  div.style.animationDelay=(i*.04)+'s';
+
+  div.innerHTML=`
+    <div class="pbadge ${pp.b}">${pp.s}</div>
+    <div class="ri">
+      <h3>${escHtml(contact.name||'Unknown')}</h3>
+      <div class="meta">${escHtml(contact.title||'')} ${contact.company?'· '+escHtml(contact.company):''} ${followers}</div>
+      ${contact.bio ? `<div class="bio">${escHtml(contact.bio.slice(0,100))}${contact.bio.length>100?'...':''}</div>` : ''}
+      <a class="url" href="${contact.url}" target="_blank">${contact.url}</a>
+      ${contact.linkedinUrl ? `<a class="url" href="${contact.linkedinUrl}" target="_blank">🔗 LinkedIn Profile</a>` : ''}
+      <div class="nrow">
+        <input class="ni" placeholder="Add a note..." value="${escAttr(contact.note||'')}"
+          oninput="updateNote('${id}',this.value)">
+      </div>
+    </div>
+    <div class="rr">
+      <span class="spill ${sc}">${contact.score}/10</span>
+      <span class="src-tag">${pp.label}</span>
+      <span class="opill ${SCLS[os]}" id="op-${safeId}" onclick="cycleStatus('${id}')" title="Click to change">${SLBL[os]}</span>
+      <div class="cycle-hint">tap to cycle</div>
+      <div class="cbtns">
+        <button class="cb" onclick="openDM('${id}')">DM →</button>
+        ${isSvTab
+          ? `<button class="cb rm" onclick="unsaveC('${id}')">Remove</button>`
+          : `<button class="cb ${isSv?'sv-on':''}" id="svb-${safeId}" onclick="doSave('${id}')">${isSv?'✓ Saved':'+ Save'}</button>`
+        }
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s){ return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function doSave(id){
+  const r=results.find(x=>x.id===id);
+  if(r){ saveC(r); const k=id.replace(/[^a-zA-Z0-9]/g,'_'); const b=document.getElementById('svb-'+k); if(b){b.textContent='✓ Saved';b.classList.add('sv-on');} updateStats(); }
+}
+
+function updateNote(id,val){
+  if(saved[id]){saved[id].note=val;persist();}
+  const r=results.find(x=>x.id===id);
+  if(r) r.note=val;
+}
+
+function cycleStatus(id){
+  const c=saved[id], r=results.find(x=>x.id===id);
+  const cur=(c||r)?.outreachStatus||'pending';
+  const next=SCYCLE[(SCYCLE.indexOf(cur)+1)%SCYCLE.length];
+  if(c){c.outreachStatus=next;persist();}
+  if(r) r.outreachStatus=next;
+  const k=id.replace(/[^a-zA-Z0-9]/g,'_');
+  const pill=document.getElementById('op-'+k);
+  if(pill){pill.className='opill '+SCLS[next];pill.textContent=SLBL[next];}
+  showToast(`Status → ${SLBL[next]}`);
+}
+
+function filterR(f,el){
+  activeF=f;
+  document.querySelectorAll('.fchip[data-f]').forEach(c=>c.classList.toggle('active',c.dataset.f===f));
+  renderR();
+}
+function filterSv(f,el){
+  document.querySelectorAll('.fchip[data-sf]').forEach(c=>c.classList.toggle('active',c.dataset.sf===f));
+  renderSvTab(f);
+}
+
+function updateStats(){
+  document.getElementById('tC').textContent=results.length;
+  document.getElementById('svC').textContent=Object.keys(saved).length;
+  updateBadge();
+}
+
+// ── DM TEMPLATES ──
+const DM={
+  jsearch: n=>`Hey ${n},\n\nI'm researching how Product Managers make roadmap decisions — specifically what's genuinely broken about the process.\n\nNo pitch, just 20 mins of your time. Would you be open to a quick chat?`,
+  twitter: n=>`Hey ${n}, you're in product right?\n\nI'm researching what's actually painful about roadmap decision-making. 20 mins? No pitch, genuine curiosity.`,
+  github:  n=>`Hey ${n},\n\nNoticed you're in product/engineering. Researching how PMs decide what to build next — the parts that feel like guesswork.\n\n20 min chat? Pure research, no agenda.`,
+};
+
+function openDM(id){
+  const item=results.find(x=>x.id===id)||saved[id];
+  if(!item) return;
+  dmId=id;
+  const pp=PC[item.platform]||{label:item.platform};
+  document.getElementById('dmFor').textContent=`→ ${item.name} on ${pp.label}`;
+  const fn=item.name.split(' ')[0]||item.name;
+  document.getElementById('dmTxt').value=(DM[item.platform]||DM.jsearch)(fn);
+  document.getElementById('dmOv').classList.add('open');
+}
+function closeModal(){document.getElementById('dmOv').classList.remove('open');}
+function copyDM(){
+  navigator.clipboard.writeText(document.getElementById('dmTxt').value).catch(()=>{});
+  if(dmId){
+    const c=saved[dmId];
+    if(c&&c.outreachStatus==='pending'){c.outreachStatus='sent';persist();const k=dmId.replace(/[^a-zA-Z0-9]/g,'_');const p=document.getElementById('op-'+k);if(p){p.className='opill op-s';p.textContent=SLBL['sent'];}}
+  }
+  showToast('Copied → marked as Sent ✓');
+  closeModal();
+}
+
+function exportCSV(svOnly){
+  const rows=[['Name','Title','Company','Platform','URL','Score','Outreach Status','Note']];
+  const data=svOnly?Object.values(saved):results;
+  if(!data.length){showToast('Nothing to export');return;}
+  data.forEach(x=>rows.push([x.name||'',x.title||'',x.company||'',x.platform||'',x.url||'',x.score||0,x.outreachStatus||'pending',(x.note||'').replace(/"/g,'""')]));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=svOnly?'saved_contacts.csv':'search_results.csv';
+  a.click();
+  showToast('CSV exported ✓');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
